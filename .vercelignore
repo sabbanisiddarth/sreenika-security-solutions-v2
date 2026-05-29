@@ -1,9 +1,7 @@
-node_modules
-dist
-.vercel
-CCTV images
-CCTV videos
+node_modules/
+dist/
+.git/
+.github/
+CCTV images/
+CCTV videos/
 *.mp4
-*.ttf
-*.png
-# Do not ignore public/frames, as it contains our WebP frame sequence

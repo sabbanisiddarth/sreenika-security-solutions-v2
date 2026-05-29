@@ -14,7 +14,8 @@ import {
 } from 'lucide-react'
 import './App.css'
 
-const TOTAL_FRAMES = 960
+const TOTAL_FRAMES = 240
+const FRAME_STEP = 4
 const BATCH_SIZE = 40
 
 const partnerBrands = [
@@ -198,7 +199,7 @@ export default function App() {
       for (let i = currentBatchStart; i < batchEnd; i++) {
         const idx = i
         const img = new Image()
-        img.src = `/frames/frame_${String(idx).padStart(4, '0')}.webp`
+        img.src = `/frames/frame_${String(idx * FRAME_STEP).padStart(4, '0')}.webp`
 
         img.onload = () => {
           if (cancelled) return

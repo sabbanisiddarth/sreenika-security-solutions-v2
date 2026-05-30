@@ -137,23 +137,38 @@ export default function App() {
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch)
   }, [])
 
-  // ── Draw frame at index, falling back to last valid frame if not loaded ──
-  const drawFrame = useCallback((index) => {
+  // ── Helper: Find the nearest loaded frame index to guarantee continuous display ──
+  const getNearestLoadedFrame = useCallback((index) => {
+    if (imagesRef.current[index]) return index
+
+    // Search outwards from target frame index
+    for (let offset = 1; offset < TOTAL_FRAMES; offset++) {
+      const left = index - offset
+      const right = index + offset
+
+      if (left >= 0 && imagesRef.current[left]) return left
+      if (right < TOTAL_FRAMES && imagesRef.current[right]) return right
+    }
+    return -1
+  }, [])
+
+  // ── Draw frame at index, falling back to nearest loaded frame if not ready ──
+  const drawFrame = useCallback((index, forceRedraw = false) => {
     const clampedIndex = Math.max(0, Math.min(index, TOTAL_FRAMES - 1))
     
-    // Performance Guard: Skip redundant draw calls if the active frame index hasn't changed
-    if (clampedIndex === lastDrawnIndexRef.current) return
+    const targetIndex = getNearestLoadedFrame(clampedIndex)
+    if (targetIndex < 0) return // No frames loaded at all yet
 
-    const img = imagesRef.current[clampedIndex]
+    // Performance Guard: Skip redundant draw calls if the active frame index hasn't changed
+    if (!forceRedraw && targetIndex === lastDrawnIndexRef.current) return
+
+    const img = imagesRef.current[targetIndex]
 
     if (img) {
       drawImageCovered(img)
-      lastDrawnIndexRef.current = clampedIndex
-    } else if (lastDrawnIndexRef.current >= 0 && lastDrawnIndexRef.current !== clampedIndex) {
-      const fallback = imagesRef.current[lastDrawnIndexRef.current]
-      if (fallback) drawImageCovered(fallback)
+      lastDrawnIndexRef.current = targetIndex
     }
-  }, [drawImageCovered])
+  }, [drawImageCovered, getNearestLoadedFrame])
 
   // ── Canvas resize handler with Native High-DPI support ──
   const handleResize = useCallback(() => {
@@ -163,7 +178,7 @@ export default function App() {
     canvas.width = window.innerWidth * dpr
     canvas.height = window.innerHeight * dpr
     if (lastDrawnIndexRef.current >= 0) {
-      drawFrame(lastDrawnIndexRef.current)
+      drawFrame(lastDrawnIndexRef.current, true)
     }
   }, [drawFrame])
 
@@ -184,75 +199,139 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize)
   }, [handleResize])
 
-  // ── Step 2: Batch-load all frames ──
+  // ── Step 2: Progressive Two-Phase Frame Preloading ──
   useEffect(() => {
     let cancelled = false
-    let currentBatchStart = 0
 
-    const loadBatch = () => {
+    // Partition frames: Even indices are Phase 1 (Critical), Odd indices are Phase 2 (Background)
+    const criticalIndices = []
+    const backgroundIndices = []
+
+    for (let i = 0; i < TOTAL_FRAMES; i++) {
+      if (i % 2 === 0) {
+        criticalIndices.push(i)
+      } else {
+        backgroundIndices.push(i)
+      }
+    }
+
+    const CRITICAL_COUNT = criticalIndices.length
+    let criticalLoaded = 0
+
+    let criticalBatchIndex = 0
+    const CRITICAL_BATCH_SIZE = 20
+
+    // Load Phase 1 (Critical frames) batch-by-batch
+    const loadCriticalBatch = () => {
       if (cancelled) return
 
-      const batchEnd = Math.min(currentBatchStart + BATCH_SIZE, TOTAL_FRAMES)
+      const batchEnd = Math.min(criticalBatchIndex + CRITICAL_BATCH_SIZE, CRITICAL_COUNT)
       let batchDone = 0
-      const batchTotal = batchEnd - currentBatchStart
+      const batchTotal = batchEnd - criticalBatchIndex
 
-      for (let i = currentBatchStart; i < batchEnd; i++) {
-        const idx = i
+      if (batchTotal <= 0) {
+        // Phase 1 finished! Fade out preloader and initiate background Phase 2
+        if (!cancelled) {
+          drawFrame(0)
+          setPreloaderFading(true)
+          setTimeout(() => {
+            if (cancelled) return
+            setPreloaderVisible(false)
+            setIsReady(true)
+            loadBackgroundFrames()
+          }, 700)
+        }
+        return
+      }
+
+      for (let i = criticalBatchIndex; i < batchEnd; i++) {
+        const idx = criticalIndices[i]
         const img = new Image()
         img.src = `/frames/frame_${String(idx * FRAME_STEP).padStart(4, '0')}.webp`
 
         img.onload = () => {
           if (cancelled) return
           imagesRef.current[idx] = img
-          loadedCountRef.current += 1
+          criticalLoaded += 1
 
-          // Draw frame 0 the instant it's ready so the canvas shows immediately
+          // Draw frame 0 immediately once it's loaded
           if (idx === 0 && lastDrawnIndexRef.current < 0) {
             drawFrame(0)
           }
 
-          const progress = Math.floor((loadedCountRef.current / TOTAL_FRAMES) * 100)
+          const progress = Math.min(100, Math.floor((criticalLoaded / CRITICAL_COUNT) * 100))
           setLoadProgress(progress)
 
           batchDone++
           if (batchDone === batchTotal) {
-            currentBatchStart += BATCH_SIZE
-            if (currentBatchStart < TOTAL_FRAMES) {
-              setTimeout(loadBatch, 4)
-            } else if (!cancelled) {
-              // All frames ready — ensure frame 0 is drawn, then fade out preloader
-              drawFrame(0)
-              setPreloaderFading(true)
-              setTimeout(() => {
-                setPreloaderVisible(false)
-                setIsReady(true)
-              }, 700)
-            }
+            criticalBatchIndex += CRITICAL_BATCH_SIZE
+            setTimeout(loadCriticalBatch, 4)
           }
         }
 
         img.onerror = () => {
           if (cancelled) return
-          loadedCountRef.current += 1
+          criticalLoaded += 1
           batchDone++
           if (batchDone === batchTotal) {
-            currentBatchStart += BATCH_SIZE
-            if (currentBatchStart < TOTAL_FRAMES) {
-              setTimeout(loadBatch, 4)
-            } else if (!cancelled) {
-              setPreloaderFading(true)
-              setTimeout(() => {
-                setPreloaderVisible(false)
-                setIsReady(true)
-              }, 700)
-            }
+            criticalBatchIndex += CRITICAL_BATCH_SIZE
+            setTimeout(loadCriticalBatch, 4)
           }
         }
       }
     }
 
-    loadBatch()
-    return () => { cancelled = true }
+    // Load Phase 2 (High-Fidelity frames) silently in the background
+    const loadBackgroundFrames = () => {
+      if (cancelled) return
+
+      let backgroundBatchIndex = 0
+      const BACKGROUND_BATCH_SIZE = 10
+
+      const loadNextBackgroundBatch = () => {
+        if (cancelled) return
+
+        const batchEnd = Math.min(backgroundBatchIndex + BACKGROUND_BATCH_SIZE, backgroundIndices.length)
+        let batchDone = 0
+        const batchTotal = batchEnd - backgroundBatchIndex
+
+        if (batchTotal <= 0) return
+
+        for (let i = backgroundBatchIndex; i < batchEnd; i++) {
+          const idx = backgroundIndices[i]
+          const img = new Image()
+          img.src = `/frames/frame_${String(idx * FRAME_STEP).padStart(4, '0')}.webp`
+
+          img.onload = () => {
+            if (cancelled) return
+            imagesRef.current[idx] = img
+            batchDone++
+            if (batchDone === batchTotal) {
+              backgroundBatchIndex += BACKGROUND_BATCH_SIZE
+              setTimeout(loadNextBackgroundBatch, 50) // Non-blocking delay to keep UI buttery-smooth
+            }
+          }
+
+          img.onerror = () => {
+            if (cancelled) return
+            batchDone++
+            if (batchDone === batchTotal) {
+              backgroundBatchIndex += BACKGROUND_BATCH_SIZE
+              setTimeout(loadNextBackgroundBatch, 50)
+            }
+          }
+        }
+      }
+
+      loadNextBackgroundBatch()
+    }
+
+    // Start critical preloading phase
+    loadCriticalBatch()
+
+    return () => {
+      cancelled = true
+    }
   }, [drawFrame])
 
   // ── Step 3: Scroll → frame scrubbing (rAF-throttled, no-flicker) ──

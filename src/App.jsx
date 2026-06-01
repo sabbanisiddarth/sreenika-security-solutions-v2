@@ -353,18 +353,20 @@ export default function App() {
         const progressPercent = fraction * 100
         setScrollProgress(progressPercent)
 
-        // Set active section based on scroll progress percentage
+        // Set active section based on scroll progress percentage (including dedicated Founder section)
         let activeSec = 0
-        if (progressPercent < 20) {
+        if (progressPercent < 18) {
           activeSec = 0
-        } else if (progressPercent < 45) {
+        } else if (progressPercent < 38) {
           activeSec = 1
-        } else if (progressPercent < 68) {
+        } else if (progressPercent < 56) {
           activeSec = 2
-        } else if (progressPercent < 85) {
-          activeSec = 3
+        } else if (progressPercent < 72) {
+          activeSec = 3 // Founder Section
+        } else if (progressPercent < 88) {
+          activeSec = 4 // Performance Console / Stats
         } else {
-          activeSec = 4
+          activeSec = 5 // Partners, CTA & Footer
         }
         setActiveSection(activeSec)
       })
@@ -544,29 +546,38 @@ export default function App() {
                     </li>
                   </ul>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-                <div className="liquid-glass-card founder-card">
-                  <div className="founder-header">
-                    <span className="label-caps">FOUNDER & OWNERSHIP</span>
-                  </div>
-                  <div className="founder-body">
-                    <div className="founder-image-wrapper">
-                      <img src="/founder.png" alt="Ranadheer Nagula" className="founder-img" />
-                    </div>
-                    <div className="founder-details">
-                      <h3 className="founder-name">Ranadheer Nagula</h3>
-                      <span className="founder-role">Founder & Owner</span>
-                      <span className="founder-tag">// SREENIKA SECURITY SOLUTIONS</span>
-                    </div>
-                  </div>
+        {/* Section 3: Founder & Ownership */}
+        <section className={`scroll-section section-founder ${activeSection === 3 ? 'active' : ''}`}>
+          <div className="container">
+            <div className="founder-layout">
+              <div className="founder-image-wrapper liquid-glass-card">
+                <img
+                  src="/Founder's Image.png"
+                  alt="Ranadheer Nagula - Founder & Owner"
+                  className="founder-photo"
+                />
+              </div>
+              <div className="founder-info">
+                <span className="label-caps text-accent">LEADERSHIP & OWNERSHIP</span>
+                <h2 className="founder-name">Ranadheer Nagula</h2>
+                <div className="founder-divider" />
+                <p className="founder-role">Founder & Owner</p>
+                <div className="founder-badge">
+                  <Shield size={16} className="text-accent" />
+                  <span className="label-caps">EST. 2017</span>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Section 3: Performance Console / Stats */}
-        <section id="control-console" className={`scroll-section section-stats ${activeSection === 3 ? 'active' : ''}`}>
+        {/* Section 4: Performance Console / Stats */}
+        <section id="control-console" className={`scroll-section section-stats ${activeSection === 4 ? 'active' : ''}`}>
           <div className="container">
             <div className="liquid-glass-card console-card">
               <div className="console-header">
@@ -597,8 +608,8 @@ export default function App() {
           </div>
         </section>
 
-        {/* Section 4: Partners, CTA & Footer */}
-        <section className={`scroll-section section-partners-cta-footer ${activeSection === 4 ? 'active' : ''}`}>
+        {/* Section 5: Partners, CTA & Footer */}
+        <section className={`scroll-section section-partners-cta-footer ${activeSection === 5 ? 'active' : ''}`}>
           <div className="container">
             <div className="partners-block">
               <span className="label-caps text-accent">COOPERATIVE ECOSYSTEMS</span>

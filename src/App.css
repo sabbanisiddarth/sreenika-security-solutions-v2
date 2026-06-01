@@ -785,83 +785,92 @@ html, body {
   font-weight: 600;
 }
 
-.about-right {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-24);
-  width: 100%;
-}
-
-.founder-card {
-  width: 100%;
-}
-
-.founder-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: var(--space-16);
-  margin-bottom: var(--space-24);
-}
-
-.founder-header .label-caps {
-  color: var(--color-accent);
-}
-
-.founder-body {
-  display: flex;
+/* ── Section 3: Founder & Ownership ── */
+.founder-layout {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: var(--space-64);
   align-items: center;
-  gap: var(--space-24);
+  width: 100%;
 }
 
 .founder-image-wrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid var(--color-glass-border-hover);
-  box-shadow: 0 0 16px hsla(var(--hsl-accent), 0.25);
-  flex-shrink: 0;
-}
-
-.founder-img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  padding: var(--space-8);
+  border-radius: var(--space-24);
+  background: var(--color-glass-bg);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
-.founder-details {
+.founder-photo {
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: cover;
+  border-radius: var(--space-16);
+  filter: brightness(0.95) contrast(1.02);
+  transition: transform 0.6s var(--spring-ease), filter 0.6s var(--smooth-ease);
+}
+
+.founder-image-wrapper:hover .founder-photo {
+  transform: scale(1.03) translateY(-2px);
+  filter: brightness(1) contrast(1.05);
+}
+
+.founder-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  align-items: flex-start;
   text-align: left;
 }
 
 .founder-name {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 40px;
   font-weight: 700;
-  color: #ffffff;
-  letter-spacing: -0.2px;
-  margin: 0;
+  margin: var(--space-16) 0 var(--space-8);
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+}
+
+.founder-divider {
+  width: 64px;
+  height: 2px;
+  background: var(--color-accent);
+  margin-bottom: var(--space-16);
 }
 
 .founder-role {
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--color-accent);
-}
-
-.founder-tag {
-  font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.35);
-  text-transform: uppercase;
+  margin-bottom: var(--space-24);
 }
 
-/* ── Section 3: Performance Console ── */
+.founder-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  background: rgba(0, 136, 255, 0.05);
+  border: 1px solid rgba(0, 136, 255, 0.15);
+  padding: var(--space-8) var(--space-16);
+  border-radius: var(--space-32);
+}
+
+.founder-badge .label-caps {
+  color: var(--color-accent);
+  font-size: 8.5px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+/* ── Section 4: Performance Console ── */
 .console-card {
   width: 100%;
   padding: 0;
@@ -1154,6 +1163,17 @@ html, body {
   .about-layout {
     grid-template-columns: 1fr;
     gap: var(--space-32);
+  }
+  .founder-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-32);
+  }
+  .founder-info {
+    align-items: center;
+    text-align: center;
+  }
+  .founder-divider {
+    margin: var(--space-16) auto;
   }
   .about-content {
     grid-template-columns: 1fr;
